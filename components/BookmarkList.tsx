@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
+import { Globe, Trash2, BookmarkX, Loader2 } from 'lucide-react'
 
 interface Bookmark {
     id: string
@@ -34,8 +35,6 @@ export default function BookmarkList({ refreshKey }: { refreshKey?: number }) {
         let channel: ReturnType<typeof supabase.channel> | null = null
 
         const setupRealtime = async () => {
-            // Get the user's session and set the JWT on the Realtime connection
-            // Without this, auth.uid() returns NULL during RLS checks for INSERT events
             const { data: { session } } = await supabase.auth.getSession()
             if (session?.access_token) {
                 supabase.realtime.setAuth(session.access_token)
@@ -67,7 +66,6 @@ export default function BookmarkList({ refreshKey }: { refreshKey?: number }) {
 
         setupRealtime()
 
-        // Keep the Realtime token fresh when auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (_event, session) => {
                 if (session?.access_token) {
@@ -87,37 +85,116 @@ export default function BookmarkList({ refreshKey }: { refreshKey?: number }) {
         setBookmarks(bookmarks.filter((b) => b.id !== id))
     }
 
-    if (loading) return <p className="text-zinc-500">Loading bookmarks...</p>
+    // Extract domain from URL for display
+    const getDomain = (url: string) => {
+        try {
+            return new URL(url).hostname
+        } catch {
+            return url
+        }
+    }
 
-    if (bookmarks.length === 0)
-        return <p className="text-zinc-500">No bookmarks yet. Add one above!</p>
+    // Format date
+    const formatDate = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+        })
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-16">
+                <Loader2
+                    className="h-6 w-6 animate-spin"
+                    style={{ color: 'var(--accent)' }}
+                />
+                <span className="ml-3 text-sm" style={{ color: 'var(--muted)' }}>
+                    Loading bookmarks...
+                </span>
+            </div>
+        )
+    }
+
+    if (bookmarks.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div
+                    className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
+                    style={{ background: 'var(--accent-light)' }}
+                >
+                    <BookmarkX className="h-8 w-8" style={{ color: 'var(--accent)' }} />
+                </div>
+                <p className="mb-1 font-semibold">No bookmarks yet</p>
+                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                    Add your first bookmark above to get started!
+                </p>
+            </div>
+        )
+    }
 
     return (
-        <ul className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
             {bookmarks.map((bookmark) => (
-                <li
+                <div
                     key={bookmark.id}
-                    className="flex items-center justify-between border rounded-lg px-4 py-3"
+                    className="group flex items-center gap-4 rounded-2xl p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+                    style={{
+                        background: 'var(--card)',
+                        border: '1px solid var(--card-border)',
+                    }}
                 >
-                    <div>
+                    {/* Icon */}
+                    <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                        style={{ background: 'var(--accent-light)' }}
+                    >
+                        <Globe className="h-5 w-5" style={{ color: 'var(--accent)' }} />
+                    </div>
+
+                    {/* Content */}
+                    <div className="min-w-0 flex-1">
                         <a
                             href={bookmark.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-medium hover:underline"
+                            className="block truncate font-medium transition-colors hover:underline"
+                            style={{ color: 'var(--foreground)' }}
                         >
                             {bookmark.title}
                         </a>
-                        <p className="text-sm text-zinc-500">{bookmark.url}</p>
+                        <div className="mt-0.5 flex items-center gap-2">
+                            <span
+                                className="truncate text-xs"
+                                style={{ color: 'var(--muted)' }}
+                            >
+                                {getDomain(bookmark.url)}
+                            </span>
+                            <span className="text-xs" style={{ color: 'var(--card-border)' }}>
+                                •
+                            </span>
+                            <span
+                                className="shrink-0 text-xs"
+                                style={{ color: 'var(--muted)' }}
+                            >
+                                {formatDate(bookmark.created_at)}
+                            </span>
+                        </div>
                     </div>
+
+                    {/* Delete Button */}
                     <button
                         onClick={() => handleDelete(bookmark.id)}
-                        className="text-sm text-red-500 hover:text-red-700"
+                        className="shrink-0 rounded-lg p-2 opacity-0 transition-all group-hover:opacity-100 hover:scale-110 active:scale-95"
+                        style={{ color: 'var(--danger)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-light)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        title="Delete bookmark"
                     >
-                        Delete
+                        <Trash2 className="h-4 w-4" />
                     </button>
-                </li>
+                </div>
             ))}
-        </ul>
+        </div>
     )
 }
