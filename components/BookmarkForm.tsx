@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
 
-export default function BookmarkForm() {
+export default function BookmarkForm({ onBookmarkAdded }: { onBookmarkAdded?: () => void }) {
     const supabase = createClient()
     const [url, setUrl] = useState('')
     const [title, setTitle] = useState('')
@@ -23,6 +23,7 @@ export default function BookmarkForm() {
             })
             setUrl('')
             setTitle('')
+            onBookmarkAdded?.()
         }
 
         setLoading(false)
