@@ -185,7 +185,7 @@ export default function BookmarkList({ refreshKey }: { refreshKey?: number }) {
                     {/* Delete Button */}
                     <button
                         onClick={() => handleDelete(bookmark.id)}
-                        className="shrink-0 rounded-lg p-2 opacity-0 transition-all group-hover:opacity-100 hover:scale-110 active:scale-95"
+                        className="shrink-0 rounded-lg p-2 transition-all hover:scale-110 active:scale-95"
                         style={{ color: 'var(--danger)' }}
                         onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-light)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
